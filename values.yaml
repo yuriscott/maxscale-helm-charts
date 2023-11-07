@@ -1,0 +1,866 @@
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+## @param global.storageClass Global StorageClass for Persistent Volume(s)
+##
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: "rook-ceph-block"
+
+## @section Common parameters
+
+## @param kubeVersion Force target Kubernetes version (using Helm capabilities if not set)
+##
+kubeVersion: ""
+## @param nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname template with a string
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+## @param schedulerName Name of the Kubernetes scheduler (other than default)
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+## @param clusterDomain Kubernetes DNS Domain name to use
+##
+clusterDomain: cluster.local
+
+## @section MariaDB MaxScale parameters
+
+## Bitnami MariaDB Maxscale image
+## @param image.registry MariaDB Maxscale image registry
+## @param image.repository MariaDB Maxscale image repository
+## @param image.tag MariaDB Maxscale image tag (immutable tags are recommended)
+## @param image.digest MariaDB Maxscale image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+## @param image.pullPolicy Maxscale Galera image pull policy
+## @param image.pullSecrets Specify docker-registry secret names as an array
+## @param image.debug Specify if debug logs should be enabled
+##
+image:
+  registry: dockerhub.kubekey.local:7443
+  repository: addons/mariadb/maxscale
+  tag: 23.08
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## Example:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+  ## Set to true if you would like to see extra information on logs
+  ##
+  debug: true
+## @param podManagementPolicy StatefulSet controller supports relax its ordering guarantees while preserving its uniqueness and identity guarantees. There are two valid pod management policies: OrderedReady and Parallel
+## ref: https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#pod-management-policy
+##
+podManagementPolicy: OrderedReady
+## @param hostAliases Add deployment host aliases
+## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+##
+hostAliases: []
+## MariaDB Maxscale K8s svc properties
+##
+service:
+  ## @param service.type Kubernetes service type
+  ##
+  type: NodePort
+  ## @param service.clusterIP Specific cluster IP when service type is cluster IP. Use `None` for headless service
+  ## e.g:
+  ## clusterIP: None
+  ##
+  clusterIP: ""
+  ## @param service.ports.mysql MariaDB service port
+  ##
+  ports:
+    mysql: 3306
+    readonly: 3307
+    smart: 3308
+  ## @param service.nodePorts.mysql Specify the nodePort value for the LoadBalancer and NodePort service types.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+  ## e.g:
+  ## nodePort:
+  ##    mysql: 30001
+  ##
+  nodePorts:
+    mysql: "30005"
+    readonly: "30007"
+    smart: "30009"
+  ## @param service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+  ##
+  extraPorts: []
+  ## @param service.externalIPs External IP list to use with ClusterIP service type
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#external-ips
+  ##
+  externalIPs: []
+  ## @param service.loadBalancerIP `loadBalancerIP` if service type is `LoadBalancer`
+  ## Set the LoadBalancer service type to internal only
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  loadBalancerIP: ""
+  ## @param service.loadBalancerSourceRanges Addresses that are allowed when svc is `LoadBalancer`
+  ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+  ##
+  ## loadBalancerSourceRanges:
+  ## - 10.10.10.0/24
+  ##
+  loadBalancerSourceRanges: []
+  ## @param service.externalTrafficPolicy %%MAIN_CONTAINER_NAME%% service external traffic policy
+  ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  ##
+  externalTrafficPolicy: Cluster
+  ## @param service.annotations Additional annotations for MariaDB Maxscale service
+  ## This can be used toset the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  annotations: {}
+  ## @param service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+  ## If "ClientIP", consecutive client requests will be directed to the same Pod
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Additional settings for the sessionAffinity
+  ## sessionAffinityConfig:
+  ##   clientIP:
+  ##     timeoutSeconds: 300
+  ##
+  sessionAffinityConfig: {}
+  ## Headless service properties
+  ##
+  headless:
+    ## @param service.headless.annotations Annotations for the headless service.
+    ## Useful for setting `service.alpha.kubernetes.io/tolerate-unready-endpoints="true"` when using peer-finder.
+    ##
+    annotations: {}
+    ## @param service.headless.publishNotReadyAddresses Publish not Ready MariaDB Galera pods' IPs in the headless service.
+    ## Required for peer discovery during cluster bootstrap (1st chart installation), optional afterwards.
+    ##
+    publishNotReadyAddresses: true
+## Pods Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+## @param serviceAccount.create Specify whether a ServiceAccount should be created
+## @param serviceAccount.name Name of the service account to use. If not set and create is true, a name is generated using the fullname template.
+## @param serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+## @param serviceAccount.annotations Annotations for service account. Evaluated as a template. Only used if `create` is `true`.
+##
+serviceAccount:
+  create: false
+  name: ""
+  automountServiceAccountToken: false
+  annotations: {}
+
+## @param extraEnvVars Array containing extra env vars to configure MariaDB Galera replicas
+## For example:
+## extraEnvVars:
+##  - name: TZ
+##    value: "Europe/Paris"
+##
+extraEnvVars: []
+## @param extraEnvVarsCM ConfigMap containing extra env vars to configure MariaDB Galera replicas
+##
+extraEnvVarsCM: ""
+## @param extraEnvVarsSecret Secret containing extra env vars to configure MariaDB Galera replicas
+##
+extraEnvVarsSecret: ""
+## Role Based Access
+## Ref: https://kubernetes.io/docs/admin/authorization/rbac/
+##
+rbac:
+  ## @param rbac.create Specify whether RBAC resources should be created and used
+  ##
+  create: false
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+## @param podSecurityContext.enabled Enable security context
+## @param podSecurityContext.fsGroup Group ID for the container filesystem
+## @param podSecurityContext.runAsUser User ID for the container
+##
+podSecurityContext:
+  enabled: true
+  fsGroup: 0
+  runAsUser: 0
+## Configure Container Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param containerSecurityContext.enabled Enabled galera's container Security Context
+## @param containerSecurityContext.runAsUser Set galera's container Security Context runAsUser
+## @param containerSecurityContext.runAsNonRoot Set galera's container Security Context runAsNonRoot
+containerSecurityContext:
+  enabled: true
+  runAsUser: 0
+  runAsNonRoot: false
+
+## Custom db configuration
+##
+maxscale:
+  ## @param db.user Username of new user to create
+  ## ref: https://github.com/bitnami/containers/tree/main/bitnami/mariadb-galera#creating-a-database-user-on-first-run
+  ##
+  user: "maxscale"
+  ## @param db.password Password for the new user. Ignored if existing secret is provided.
+  ##
+  password: "LnTPm9Y5W6wW"
+
+
+## TLS configuration
+##
+tls:
+  ## @param tls.enabled Enable TLS support for replication traffic
+  ##
+  enabled: false
+  ## @param tls.autoGenerated Generate automatically self-signed TLS certificates
+  ##
+  autoGenerated: false
+  ## @param tls.certificatesSecret Name of the secret that contains the certificates
+  ##
+  certificatesSecret: ""
+  ## @param tls.certFilename Certificate filename
+  ##
+  certFilename: ""
+  ## @param tls.certKeyFilename Certificate key filename
+  ##
+  certKeyFilename: ""
+  ## @param tls.certCAFilename CA Certificate filename
+  ##
+  certCAFilename: ""
+## @param mariadbConfiguration [string] Configuration for the MariaDB server
+## ref: https://mysql.com/kb/en/mysql/configuring-mysql-with-mycnf/#example-of-configuration-file
+## Alternatively, you can put your my.cnf under the files/ directory
+##
+maxscaleConfiguration: |-
+  ########################
+  ## Server list
+  ########################
+
+  [mariadb1]
+  type            = server
+  address         = mariadb-galera-0.mariadb-galera-headless.ns-mec-middleware
+  port            = 3306
+  protocol        = MariaDBBackend
+  rank            = primary
+
+  [mariadb2]
+  type            = server
+  address         = mariadb-galera-1.mariadb-galera-headless.ns-mec-middleware
+  port            = 3306
+  protocol        = MariaDBBackend
+  rank            = primary
+
+  [mariadb3]
+  type            = server
+  address         = mariadb-galera-2.mariadb-galera-headless.ns-mec-middleware
+  port            = 3306
+  protocol        = MariaDBBackend
+  rank            = primary
+
+  #########################
+  ## MaxScale configuration
+  #########################
+
+  [maxscale]
+  threads                 = 16
+  threads_max             = 64
+  log_augmentation        = 1
+  ms_timestamp            = 1
+  syslog                  = 0
+  log_debug               = 1
+  admin_host              = 0.0.0.0
+  admin_secure_gui        = false
+  admin_audit             = true
+
+  #########################
+  # Monitor for the servers
+  #########################
+
+  [Galera-Monitor]
+  type                    = monitor
+  module                  = galeramon
+  servers                 = mariadb1,mariadb2,mariadb3
+  user                    = maxscale
+  password                = LnTPm9Y5W6wW
+  # auto_failover           = true
+  # auto_rejoin             = true
+  # enforce_read_only_slaves = 1
+  monitor_interval        = 2000ms
+
+  #########################
+  ## Service definitions for read/write splitting and read-only services.
+  #########################
+
+  [Read-Write-Service]
+  type            = service
+  router          = readwritesplit
+  servers         = mariadb1,mariadb2,mariadb3
+  user            = maxscale
+  password        = LnTPm9Y5W6wW
+  enable_root_user= true
+  # max_slave_connections           = 100%
+  # max_sescmd_history              = 1500
+  # causal_reads                    = true
+  # causal_reads_timeout            = 10
+  # transaction_replay              = true
+  # transaction_replay_max_size     = 1Mi
+  # delayed_retry                   = true
+  # master_reconnection             = true
+  # master_failure_mode             = fail_on_write
+  # max_slave_replication_lag       = 3
+
+  [Read-Only-Service]
+  type            = service
+  router          = readconnroute
+  servers         = mariadb1,mariadb2,mariadb3
+  router_options  = slave
+  user            = maxscale
+  password        = LnTPm9Y5W6wW
+  enable_root_user= true
+
+  ##########################
+  ## Listener definitions for the service
+  ## Listeners represent the ports the service will listen on.
+  ##########################
+
+  [Read-Write-Listener]
+  type            = listener
+  service         = Read-Write-Service
+  protocol        = MariaDBClient
+  port            = 3306
+
+  [Read-Write-Socket-Listener]
+  type            = listener
+  service         = Read-Write-Service
+  socket          = /var/lib/maxscale/rw.sock
+
+  [Read-Only-Listener]
+  type            = listener
+  service         = Read-Only-Service
+  protocol        = MariaDBClient
+  port            = 3307
+
+  [Read-Only-Socket-Listener]
+  type            = listener
+  service         = Read-Only-Service
+  socket          = /var/lib/maxscale/ro.sock 
+
+  ##########################
+  ## SmartRouter Config for the service
+  ##########################
+
+  [Smart-Service]
+  type            = service
+  router          = smartrouter
+  targets         = Read-Write-Service, Read-Only-Service
+  master          = Read-Write-Service
+  user            = maxscale
+  password        = LnTPm9Y5W6wW
+  enable_root_user= true
+
+  [SmartQuery-Listener]
+  type            = listener
+  service         = Smart-Service
+  port            = 3308
+
+## @param configurationConfigMap ConfigMap with the MariaDB configuration files (Note: Overrides `mariadbConfiguration`). The value is evaluated as a template.
+##
+configurationConfigMap: ""
+
+## @param initdbScriptsConfigMap ConfigMap with the initdb scripts (Note: Overrides `initdbScripts`)
+##
+initdbScriptsConfigMap: ""
+## @param extraFlags MariaDB additional command line flags
+## Can be used to specify command line flags, for example:
+## e.g:
+## extraFlags: "--max-connect-errors=1000 --max_connections=155"
+##
+extraFlags: ""
+## @param replicaCount Desired number of cluster nodes
+##
+replicaCount: 2
+## @param updateStrategy.type updateStrategy for MariaDB Master StatefulSet
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+##
+updateStrategy:
+  type: RollingUpdate
+## @param podLabels Extra labels for MariaDB Galera pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+##
+podLabels: {}
+## @param podAnnotations Annotations for MariaDB Galera  pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+podAnnotations: {}
+## @param podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAffinityPreset: ""
+## @param podAntiAffinityPreset Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAntiAffinityPreset: soft
+## Node affinity preset
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+##
+nodeAffinityPreset:
+  ## @param nodeAffinityPreset.type Node affinity preset type. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+  ##
+  type: ""
+  ## @param nodeAffinityPreset.key Node label key to match. Ignored if `affinity` is set.
+  ## E.g.
+  ## key: "kubernetes.io/e2e-az-name"
+  ##
+  key: ""
+  ## @param nodeAffinityPreset.values Node label values to match. Ignored if `affinity` is set.
+  ## E.g.
+  ## values:
+  ##   - e2e-az1
+  ##   - e2e-az2
+  ##
+  values: []
+## @param affinity Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+## Note: podAffinityPreset, podAntiAffinityPreset, and nodeAffinityPreset will be ignored when it's set
+##
+affinity: {}
+## @param nodeSelector Node labels for pod assignment
+## ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+## @param tolerations Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+## @param topologySpreadConstraints Topology Spread Constraints for pods assignment
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+## E.g.
+## topologySpreadConstraints:
+##   - maxSkew: 1
+##     topologyKey: topology.kubernetes.io/zone
+##     whenUnsatisfiable: DoNotSchedule
+##
+topologySpreadConstraints: []
+## @param lifecycleHooks for the galera container(s) to automate configuration before or after startup
+##
+lifecycleHooks: {}
+## Enable persistence using Persistent Volume Claims
+## ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
+##
+## Galera container port
+## @param containerPorts.mysql mariadb database container port
+## @param containerPorts.readonly mariadb database container port
+## @param containerPorts.admin maxscale container port
+##
+containerPorts:
+  mysql: 3306
+  # Note: Container image is not aware of changes in the following container's ports
+  readonly: 3307
+  smart: 3308
+  admin: 8989
+
+
+
+persistence:
+  ## @param persistence.enabled Enable persistence using PVC
+  ##
+  enabled: true
+  ## @param persistence.existingClaim Provide an existing `PersistentVolumeClaim`
+  ##
+  existingClaim: ""
+  ## @param persistence.subPath Subdirectory of the volume to mount
+  ##
+  subPath: ""
+  ## @param persistence.mountPath Path to mount the volume at
+  ##
+  mountPath: /var/lib/maxscale
+  ## @param persistence.selector Selector to match an existing Persistent Volume (this value is evaluated as a template)
+  ## selector:
+  ##   matchLabels:
+  ##     app: my-app
+  ##
+  selector: {}
+  ## @param persistence.storageClass Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  storageClass: ""
+  ## @param persistence.annotations Persistent Volume Claim annotations
+  ##
+  annotations: {}
+  ## @param persistence.labels Persistent Volume Claim Labels
+  ##
+  labels: {}
+  ## @param persistence.accessModes Persistent Volume Access Modes
+  ##
+  accessModes:
+    - ReadWriteOnce
+  ## @param persistence.size Persistent Volume Size
+  ##
+  size: 2Gi
+
+
+
+## @param priorityClassName Priority Class Name for Statefulset
+##
+priorityClassName: ""
+## @param initContainers Additional init containers (this value is evaluated as a template)
+## initContainers:
+## - name: do-something
+##   image: bitnami/minideb
+##   command: ['do', 'something']
+##
+initContainers: []
+## @param sidecars Add additional sidecar containers (this value is evaluated as a template)
+## e.g:
+## sidecars:
+##   - name: your-image-name
+##     image: your-image
+##     imagePullPolicy: Always
+##     ports:
+##       - name: portname
+##         containerPort: 1234
+##
+sidecars: []
+## extraVolumes and extraVolumeMounts allows you to mount other volumes
+## @param extraVolumes Extra volumes
+## @param extraVolumeMounts Mount extra volume(s)
+## Example Use Cases:
+##  mount certificates to enable data-in-transit encryption
+##  mount keys for data-at-rest encryption using file plugin
+## e.g:
+## extraVolumes:
+## - name: mariadb-certs
+##   secret:
+##     defaultMode: 288
+##     secretName: mariadb-certs
+## - name: mariadb-encryption
+##   secret:
+##     defaultMode: 288
+##     secretName: mariadb-encryption
+##
+extraVolumes: []
+## extraVolumeMounts:
+## - name: mariadb-certs
+##   mountPath: /certs
+##   readOnly: true
+## - name: mariadb-encryption
+##   mountPath: /encryption
+##   readOnly: true
+##
+extraVolumeMounts: []
+## MariaDB Galera containers' resource requests and limits
+## We usually recommend not to specify default resources and to leave this as a conscious
+## choice for the user. This also increases chances charts run on environments with little
+## resources, such as Minikube. If you do want to specify resources, uncomment the following
+## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+## @param resources.limits The resources limits for the container
+## @param resources.requests The requested resources for the container
+##
+resources:
+  ## Example:
+  ## limits:
+  ##    cpu: 0.5
+  ##    memory: 256Mi
+  limits:
+    cpu: 0.5
+    memory: 256Mi
+  ## Examples:
+  # requests:
+  #    cpu: 0.5
+  #    memory: 256Mi
+  requests:
+    cpu: 0.5
+    memory: 256Mi
+## MariaDB Galera containers' liveness probe
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param livenessProbe.enabled Turn on and off liveness probe
+## @param livenessProbe.initialDelaySeconds Delay before liveness probe is initiated
+## @param livenessProbe.periodSeconds How often to perform the probe
+## @param livenessProbe.timeoutSeconds When the probe times out
+## @param livenessProbe.failureThreshold Minimum consecutive failures for the probe
+## @param livenessProbe.successThreshold Minimum consecutive successes for the probe
+##
+livenessProbe:
+  enabled: true
+  ## Initializing the database could take some time
+  ##
+  initialDelaySeconds: 20
+  periodSeconds: 20
+  timeoutSeconds: 1
+  successThreshold: 1
+  failureThreshold: 3
+## MariaDB Galera containers' readiness probe
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param readinessProbe.enabled Turn on and off readiness probe
+## @param readinessProbe.initialDelaySeconds Delay before readiness probe is initiated
+## @param readinessProbe.periodSeconds How often to perform the probe
+## @param readinessProbe.timeoutSeconds When the probe times out
+## @param readinessProbe.failureThreshold Minimum consecutive failures for the probe
+## @param readinessProbe.successThreshold Minimum consecutive successes for the probe
+##
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 20
+  periodSeconds: 20
+  timeoutSeconds: 1
+  successThreshold: 1
+  failureThreshold: 3
+## MariaDB Galera containers' startup probe
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param startupProbe.enabled Turn on and off startup probe
+## @param startupProbe.initialDelaySeconds Delay before startup probe is initiated
+## @param startupProbe.periodSeconds How often to perform the probe
+## @param startupProbe.timeoutSeconds When the probe times out
+## @param startupProbe.failureThreshold Minimum consecutive failures for the probe
+## @param startupProbe.successThreshold Minimum consecutive successes for the probe
+##
+startupProbe:
+  enabled: false
+  ## Initializing the database could take some time
+  ##
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 1
+  successThreshold: 1
+  ## Let's wait 600 seconds by default, it should give enough time in any cluster for mysql to init
+  ##
+  failureThreshold: 48
+## @param customStartupProbe Custom liveness probe for the Web component
+##
+customStartupProbe: {}
+## @param customLivenessProbe Custom liveness probe for the Web component
+##
+customLivenessProbe: {}
+## @param customReadinessProbe Custom rediness probe for the Web component
+##
+customReadinessProbe: {}
+## Pod disruption budget configuration
+##
+podDisruptionBudget:
+  ## @param podDisruptionBudget.create Specifies whether a Pod disruption budget should be created
+  ##
+  create: false
+  ## @param podDisruptionBudget.minAvailable Minimum number / percentage of pods that should remain scheduled
+  ##
+  minAvailable: 1
+  ## @param podDisruptionBudget.maxUnavailable Maximum number / percentage of pods that may be made unavailable
+  ##
+  maxUnavailable: ""
+## Prometheus exporter configuration
+##
+metrics:
+  ## @param metrics.enabled Start a side-car prometheus exporter
+  ##
+  enabled: true
+  ## Maxscale Prometheus exporter image
+  ## ref: https://hub.docker.com/r/bitnami/mysqld-exporter/tags/
+  ## @param metrics.image.registry MariaDB Prometheus exporter image registry
+  ## @param metrics.image.repository MariaDB Prometheus exporter image repository
+  ## @param metrics.image.tag MariaDB Prometheus exporter image tag (immutable tags are recommended)
+  ## @param metrics.image.digest MariaDB Prometheus exporter image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+  ## @param metrics.image.pullPolicy MariaDB Prometheus exporter image pull policy
+  ## @param metrics.image.pullSecrets MariaDB Prometheus exporter image pull secrets
+  ##
+  image:
+    registry: dockerhub.kubekey.local:7443
+    repository: addons/mariadb/maxctrl-exporter
+    tag: "v0.1.1"
+    digest: ""
+    pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ## Example:
+    ## pullSecrets:
+    ##   - myRegistryKeySecretName
+    ##
+    pullSecrets: []
+  ## @param metrics.extraFlags MariaDB Prometheus exporter additional command line flags
+  ## Can be used to specify command line flags
+  ## E.g.:
+  ## extraFlags:
+  ##   - --collect.binlog_size
+  ##
+  extraFlags: []
+  ## MySQL Prometheus exporter containers' resource requests and limits
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## We usually recommend not to specify default resources and to leave this as a conscious
+  ## choice for the user. This also increases chances charts run on environments with little
+  ## resources, such as Minikube. If you do want to specify resources, uncomment the following
+  ## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  ## @param metrics.resources.limits The resources limits for the container
+  ## @param metrics.resources.requests The requested resources for the container
+  ##
+  resources:
+    ## Example:
+    ## limits:
+    ##    cpu: 0.5
+    ##    memory: 256Mi
+    limits:
+      cpu: 50m
+      memory: 50Mi
+    ## Examples:
+    ## requests:
+    ##    cpu: 0.5
+    ##    memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 50Mi
+  ## MySQL Prometheus exporter's Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  ## @param metrics.containerSecurityContext.enabled Enabled exporter's container Security Context
+  containerSecurityContext:
+    enabled: false
+  ## MySQL Prometheus exporter service parameters
+  ## @param metrics.service.type Prometheus exporter service type
+  ## @param metrics.service.port Prometheus exporter service port
+  ## @param metrics.service.annotations [object] Prometheus exporter service annotations
+  ##
+  service:
+    type: ClusterIP
+    port: 9104
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9104"
+    ## @param metrics.service.loadBalancerIP Load Balancer IP if the Prometheus metrics server type is `LoadBalancer`
+    ## ref: https://kubernetes.io/docs/user-guide/services/#type-loadbalancer
+    ##
+    loadBalancerIP: ""
+    ## @param metrics.service.clusterIP Prometheus metrics service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
+    ## @param metrics.service.loadBalancerSourceRanges Prometheus metrics service Load Balancer sources
+    ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+    ## e.g:
+    ## loadBalancerSourceRanges:
+    ##   - 10.10.10.0/24
+    ##
+    loadBalancerSourceRanges: []
+    ## @param metrics.service.externalTrafficPolicy Prometheus metrics service external traffic policy
+    ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    ##
+    externalTrafficPolicy: Cluster
+
+  ## Prometheus Operator ServiceMonitor configuration
+  ##
+  serviceMonitor:
+    ## @param metrics.serviceMonitor.enabled if `true`, creates a Prometheus Operator ServiceMonitor (also requires `metrics.enabled` to be `true`)
+    ##
+    enabled: true
+    ## @param metrics.serviceMonitor.namespace Optional namespace which Prometheus is running in
+    ##
+    namespace: ""
+    ## @param metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+    ##
+    jobLabel: ""
+    ## @param metrics.serviceMonitor.interval How frequently to scrape metrics (use by default, falling back to Prometheus' default)
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ## e.g:
+    ## interval: 10s
+    ##
+    interval: ""
+    ## @param metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ## e.g:
+    ## scrapeTimeout: 10s
+    ##
+    scrapeTimeout: ""
+    ## @param metrics.serviceMonitor.selector [object] ServiceMonitor selector labels
+    ## Default to kube-prometheus install (CoreOS recommended), but should be set according to Prometheus install
+    ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+    ##
+    selector: {}
+    ## @param metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    relabelings: []
+    ## @param metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ## e.g:
+    ##  - sourceLabels:
+    ##      - "__name__"
+    ##    targetLabel: "__name__"
+    ##    action: replace
+    ##    regex: '(.*)'
+    ##    replacement: 'example_prefix_$1'
+    ##
+    metricRelabelings: []
+    ## @param metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+    ##
+    honorLabels: false
+    ## @param metrics.serviceMonitor.labels ServiceMonitor extra labels
+    ##
+    labels: {}
+
+  ## Prometheus Operator PrometheusRule configuration
+  ##
+  prometheusRules:
+    ## @param metrics.prometheusRules.enabled if `true`, creates a Prometheus Operator PrometheusRule (also requires `metrics.enabled` to be `true`, and makes little sense without ServiceMonitor)
+    ##
+    enabled: true
+    ## @param metrics.prometheusRules.additionalLabels [object] Additional labels to add to the PrometheusRule so it is picked up by the operator
+    ## If using the [Helm Chart](https://github.com/helm/charts/tree/master/stable/prometheus-operator) this is the name of the Helm release and 'app: prometheus-operator'
+    ##
+    additionalLabels:
+      app: prometheus-operator
+      release: prometheus
+    rules:
+      - alert: MaxScaleBackendDown
+        annotations:
+          message: 'maxscale all backend instance status all down'
+          summary: "Maxscale all backend instance is down"
+        expr: absent(maxctrl_server_up{job="mariadb-maxscale-metrics"} == 1)
+        labels:
+          severity: critical
+          service: mariadb-maxscale
+        for: 15m
+      - alert: MaxScaleDown
+        annotations:
+          message: 'Fail to Bring Up MaxScale instance Up'
+          summary: "Maxscale All Instance are absent"
+        expr: absent(maxctrl_up{job="mariadb-maxscale-metrics"} == 1)
+        labels:
+          severity: critical
+          service: mariadb-maxscale
+        for: 15m
+
+## autoscaling capacities
+##
+autoscaling:
+  # -- Enable autoscaling for maxscale
+  enabled: true
+  # -- Min Replicas of autoscale
+  minReplicas: 2
+  # -- Max Replica of auto scale
+  maxReplicas: 3
+  # Note: if both presents ,the condition is and nor or,keep in mind
+  # -- Target Memory Utilization Percentage
+  targetMemoryUtilizationPercentage: 70
+  # -- Target CPU Utilization Percentage
+  targetCPUUtilizationPercentage:

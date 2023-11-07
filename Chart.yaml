@@ -1,0 +1,30 @@
+annotations:
+  category: Database
+  licenses: Apache-2.0
+  images: |
+    - name: mariadb-maxscale
+      image: docker.io/mariadb/maxscale:23.08
+    - name: maxscale-exporter
+      image: docker.io/mariadb/maxctrl-exporter:v0.1.1
+apiVersion: v2
+appVersion: 23.08
+dependencies:
+  - name: common
+    repository: file://.//common
+    tags:
+      - bitnami-common
+    version: 2.x.x
+description: MariaDB MaxScale is a multi-primary database cluster proxy solution for synchronous replication and high availability.
+keywords:
+  - mariadb
+  - mysql
+  - database
+  - sql
+  - prometheus
+  - galera
+  - maxscale
+maintainers:
+  - name: Yuri Yin
+    url: https://github.com/no_sourcing
+name: mariadb-maxscale
+version: 1.0.0

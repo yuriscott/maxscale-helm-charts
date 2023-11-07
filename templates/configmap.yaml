@@ -1,0 +1,18 @@
+{{ if and (or (.Files.Glob "files/maxscale.cnf") .Values.maxscaleConfiguration) (not .Values.configurationConfigMap) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-configuration" (include "common.names.fullname" .) }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+{{- if (.Files.Glob "files/maxscale.cnf") }}
+{{ (.Files.Glob "files/maxscale.cnf").AsConfig | indent 2 }}
+{{- else if .Values.maxscaleConfiguration }}
+  maxscale.cnf: |
+{{ .Values.maxscaleConfiguration | indent 4 }}
+{{- end }}
+{{ end }}
